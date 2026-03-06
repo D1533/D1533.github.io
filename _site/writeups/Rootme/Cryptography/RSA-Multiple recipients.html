@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>RSA - Multiple recipients</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  </script>
+</head>
+<body>
+
+  <nav>
+  <div class="nav-left">
+    <ul>
+      <li><a href="/">Home</a></li>
+      <li><a href="/maths/">Maths</a></li>
+      <li><a href="/programming/">Programming</a></li>
+      <li><a href="/write-ups/">Write-ups</a></li>
+      <li><a href="/contact/">Contact</a></li>
+    </ul>
+  </div>
+
+  <div class="social-icons">
+    <a href="https://github.com/D1533" target="_blank" aria-label="GitHub">
+      <i class="fab fa-github"></i>
+    </a>
+    <a href="https://www.linkedin.com/in/david-manresa-526685294" target="_blank" aria-label="LinkedIn">
+      <i class="fab fa-linkedin"></i>
+    </a>
+  </div>
+</nav>
+
+
+  <main>
+    <hr />
+<h2 id="rootme---rsa---multiple-recipients">Rootme - RSA - Multiple recipients</h2>
+<hr />
+<h2 id="description">Description</h2>
+
+<p>A message sent to 3 different people has been intercepted. We have the public keys of those people. Find the message to validate the challenge.</p>
+
+<hr />
+<h2 id="solution">Solution</h2>
+
+<p>We are given three RSA-encrypted ciphertexts of the same plaintext message \(m\), encrypted using the same public exponent \(e\), but different pairwise coprime moduli \(n_0,n_1,n_2\). That is,</p>
+
+\[c_0 \equiv m^e \ mod \ n_0, \quad c_1 \equiv m^e \ mod \ n_1, \quad c_2 \equiv m^e \ mod \ n_2.\]
+
+<p>Since the \(n_i\) are pairwise coprime, by the Chinese Remainder Theorem we can compute a unique integer \(x \ mod \ n_0n_1n_2\) such that</p>
+
+\[x \equiv c_0 \ mod \ n_0, \quad x \equiv c_1 \ mod \ n_1, \quad x \equiv c_2 \ mod \ n_2.\]
+
+<p>This implies that</p>
+
+\[x \equiv m^e \ mod \ n_0n_1n_2.\]
+
+<p>In this challenge, \(e=3\) is sufficiently small, so we might have \(m^3 &lt; n_0n_1n_2\). Therefore we can take the cubic root of \(x\) and retrieve the flag.</p>
+
+<p><em>Python script</em></p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">Crypto.PublicKey</span> <span class="kn">import</span> <span class="n">RSA</span>
+<span class="kn">from</span> <span class="n">Crypto.Util.number</span> <span class="kn">import</span> <span class="n">long_to_bytes</span>
+<span class="kn">from</span> <span class="n">sympy.ntheory.modular</span> <span class="kn">import</span> <span class="n">crt</span>
+<span class="kn">from</span> <span class="n">gmpy2</span> <span class="kn">import</span> <span class="n">iroot</span>
+<span class="kn">import</span> <span class="n">base64</span>
+
+
+<span class="n">msg0</span> <span class="o">=</span> <span class="sh">'</span><span class="s">vjXJvWis95tc25G+wxC5agClCJFB9vUslFyV+I4bSiwS4Sm6k8eF61EizKo4hZFwROlO3Ci3YQaTrAm+Y9/qEbM7asvwKTePKX+cLVN61l0xxfTL8CdoXkRE2rSczp1AzzmFz83OHgszX/Wf7kgWU4M73+efPvU9FmcWOauakrdJZx8B0ErJ5cYWNS0ZCam0Nlz+pISqdSJ6MSz0Ek62Ulb3ei8I41FOdHtd8mhC7dfpdfmVLOSEW4yEnn5iuMW0ydvW055dodLc9RKcvJafH9e3zf8/S1/RORXZoUHWnBXBEFOl8iVXz70GcDTPzIhxh6imi0ynLbV68qW2vw2XRQ==</span><span class="sh">'</span>
+<span class="n">msg1</span> <span class="o">=</span> <span class="sh">'</span><span class="s">Mi4MnobVabt1+Q7R/0aIYBBpeRxPRuR6gkhr/Wbw/D23ywu2KbUYBab2XbEguRz8yzBlxScbFjjb98DuILxURoFN8lNKVJLS3d/IrGGr0hjocbz27uBS97hseX0S4nd+BL6LUn0o7qe/yCqk7Y0tEhhcuSMrGn/l9N/6UjgN38TyoyvVbd1UH6BHGLdj9g5JRBKAvcGumymfiE0qS7IOnM3mN5W8gRJaEGDkhDim21Pm1Yg2GRBJ+z7C8AEy+Dz6OFvWuDsY24Gb+643D7KrmFObJ1n8Qyme/Y1bfvBkG+xdvGoBzyQrlDT12Qjkfoqb37HNrGUUD5cj2q54gyp80w==</span><span class="sh">'</span>
+<span class="n">msg2</span> <span class="o">=</span> <span class="sh">'</span><span class="s">hMQVVspFGh7NxCqLf7DVto3OxgDLn9n9gOCjOjEOYhi/VwZ3adFsbBL+zLZxYNdkKLNWCNRktRwpnWriEsW1uDnVt2LbxSLvjvRKbR/hyvpY+0UUZFS6wCWQjGyxUydDxQ88jNM5dY58/1nxsd04I3n3Mt97SuqwBN1+4VS3SsqtbR0GU1C7ODkPoCeGVd3PNkGHPgbT7QzMwxl63Pl3i/sp0I2/gqSnKu5CDS7e2WELz0hfiOJ2v2RvIon2EEbPwx1/6zxZlMhHuGXHNZKDtyqe6Dd+EIjpwhQFW3eH7fDIirRbaPPXAYsoypS5eFD3mIWUs4yVOH9ykkdKQ9FNwg==</span><span class="sh">'</span>
+
+<span class="k">with</span> <span class="nf">open</span><span class="p">(</span><span class="sh">"</span><span class="s">clef0_pub.pem</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">rb</span><span class="sh">"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">key0</span> <span class="o">=</span> <span class="n">f</span><span class="p">.</span><span class="nf">read</span><span class="p">()</span>
+<span class="k">with</span> <span class="nf">open</span><span class="p">(</span><span class="sh">"</span><span class="s">clef1_pub.pem</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">rb</span><span class="sh">"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">key1</span> <span class="o">=</span> <span class="n">f</span><span class="p">.</span><span class="nf">read</span><span class="p">()</span>
+<span class="k">with</span> <span class="nf">open</span><span class="p">(</span><span class="sh">"</span><span class="s">clef2_pub.pem</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">rb</span><span class="sh">"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">key2</span> <span class="o">=</span> <span class="n">f</span><span class="p">.</span><span class="nf">read</span><span class="p">()</span>
+
+<span class="n">key0</span> <span class="o">=</span> <span class="n">RSA</span><span class="p">.</span><span class="nf">import_key</span><span class="p">(</span><span class="n">key0</span><span class="p">)</span>
+<span class="n">key1</span> <span class="o">=</span> <span class="n">RSA</span><span class="p">.</span><span class="nf">import_key</span><span class="p">(</span><span class="n">key1</span><span class="p">)</span>
+<span class="n">key2</span> <span class="o">=</span> <span class="n">RSA</span><span class="p">.</span><span class="nf">import_key</span><span class="p">(</span><span class="n">key2</span><span class="p">)</span>
+
+<span class="n">e</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">n0</span> <span class="o">=</span> <span class="n">key0</span><span class="p">.</span><span class="n">n</span>
+<span class="n">n1</span> <span class="o">=</span> <span class="n">key1</span><span class="p">.</span><span class="n">n</span>
+<span class="n">n2</span> <span class="o">=</span> <span class="n">key2</span><span class="p">.</span><span class="n">n</span>
+
+<span class="n">c0</span> <span class="o">=</span> <span class="nb">int</span><span class="p">.</span><span class="nf">from_bytes</span><span class="p">(</span><span class="n">base64</span><span class="p">.</span><span class="nf">b64decode</span><span class="p">(</span><span class="n">msg0</span><span class="p">),</span><span class="n">byteorder</span><span class="o">=</span><span class="sh">'</span><span class="s">big</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">c1</span> <span class="o">=</span> <span class="nb">int</span><span class="p">.</span><span class="nf">from_bytes</span><span class="p">(</span><span class="n">base64</span><span class="p">.</span><span class="nf">b64decode</span><span class="p">(</span><span class="n">msg1</span><span class="p">),</span><span class="n">byteorder</span><span class="o">=</span><span class="sh">'</span><span class="s">big</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">c2</span> <span class="o">=</span> <span class="nb">int</span><span class="p">.</span><span class="nf">from_bytes</span><span class="p">(</span><span class="n">base64</span><span class="p">.</span><span class="nf">b64decode</span><span class="p">(</span><span class="n">msg2</span><span class="p">),</span><span class="n">byteorder</span><span class="o">=</span><span class="sh">'</span><span class="s">big</span><span class="sh">'</span><span class="p">)</span>
+
+<span class="n">x</span><span class="p">,</span> <span class="n">mod</span> <span class="o">=</span> <span class="nf">crt</span><span class="p">([</span><span class="n">n0</span><span class="p">,</span><span class="n">n1</span><span class="p">,</span><span class="n">n2</span><span class="p">],[</span><span class="n">c0</span><span class="p">,</span><span class="n">c1</span><span class="p">,</span><span class="n">c2</span><span class="p">])</span>
+<span class="n">flag</span> <span class="o">=</span> <span class="nf">iroot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="mi">3</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="nf">print</span><span class="p">(</span><span class="nf">long_to_bytes</span><span class="p">(</span><span class="n">flag</span><span class="p">).</span><span class="nf">decode</span><span class="p">())</span>
+
+</code></pre></div></div>
+
+  </main>
+
+</body>
+</html>

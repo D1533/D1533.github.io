@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>b00tl3gRSA3</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  </script>
+</head>
+<body>
+
+  <nav>
+  <div class="nav-left">
+    <ul>
+      <li><a href="/">Home</a></li>
+      <li><a href="/maths/">Maths</a></li>
+      <li><a href="/programming/">Programming</a></li>
+      <li><a href="/write-ups/">Write-ups</a></li>
+      <li><a href="/contact/">Contact</a></li>
+    </ul>
+  </div>
+
+  <div class="social-icons">
+    <a href="https://github.com/D1533" target="_blank" aria-label="GitHub">
+      <i class="fab fa-github"></i>
+    </a>
+    <a href="https://www.linkedin.com/in/david-manresa-526685294" target="_blank" aria-label="LinkedIn">
+      <i class="fab fa-linkedin"></i>
+    </a>
+  </div>
+</nav>
+
+
+  <main>
+    <hr />
+<h2 id="picoctf---b00tl3grsa3">PicoCTF - b00tl3gRSA3</h2>
+<hr />
+<h2 id="description">Description</h2>
+<p>Why use p and q when I can use more? Connect with nc jupiter.challenges.picoctf.org 3726.</p>
+
+<hr />
+<h2 id="solution">Solution</h2>
+<p>The description of the challenge tells us that \(n\) is built as product of multiple primes. The server gives us the numbers \(c,n\) and \(e\). 
+We can then just try to factorize \(n\), so the totient function of \(n = p_1p_2\cdots p_k\) can be computed as</p>
+
+\[\varphi(n) = \prod_{j=1}^k (p_j-1)\]
+
+<p>We then compute \(d = e^{-1}\ mod \ \varphi(n)\) and decrypt the flag as \(m = c^d \ mod \ n\).</p>
+
+<p><em>SageMath script</em></p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">os</span>
+<span class="n">os</span><span class="p">.</span><span class="n">environ</span><span class="p">[</span><span class="sh">"</span><span class="s">TERM</span><span class="sh">"</span><span class="p">]</span> <span class="o">=</span> <span class="sh">"</span><span class="s">xterm</span><span class="sh">"</span>
+<span class="kn">from</span> <span class="n">pwn</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="n">re</span> 
+<span class="kn">from</span> <span class="n">Crypto.Util.number</span> <span class="kn">import</span> <span class="n">long_to_bytes</span>
+
+<span class="n">r</span> <span class="o">=</span> <span class="nf">remote</span><span class="p">(</span><span class="sh">"</span><span class="s">jupiter.challenges.picoctf.org</span><span class="sh">"</span><span class="p">,</span> <span class="mi">3726</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">r</span><span class="p">.</span><span class="nf">recv</span><span class="p">().</span><span class="nf">decode</span><span class="p">()</span>
+
+<span class="n">c</span> <span class="o">=</span> <span class="nf">int</span><span class="p">(</span><span class="n">re</span><span class="p">.</span><span class="nf">search</span><span class="p">(</span><span class="sa">r</span><span class="sh">"</span><span class="s">c: (\d+)</span><span class="sh">"</span><span class="p">,</span> <span class="n">data</span><span class="p">).</span><span class="nf">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">n</span> <span class="o">=</span> <span class="nf">int</span><span class="p">(</span><span class="n">re</span><span class="p">.</span><span class="nf">search</span><span class="p">(</span><span class="sa">r</span><span class="sh">"</span><span class="s">n: (\d+)</span><span class="sh">"</span><span class="p">,</span> <span class="n">data</span><span class="p">).</span><span class="nf">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">e</span> <span class="o">=</span> <span class="nf">int</span><span class="p">(</span><span class="n">re</span><span class="p">.</span><span class="nf">search</span><span class="p">(</span><span class="sa">r</span><span class="sh">"</span><span class="s">e: (\d+)</span><span class="sh">"</span><span class="p">,</span> <span class="n">data</span><span class="p">).</span><span class="nf">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+
+<span class="n">factors_n</span> <span class="o">=</span> <span class="nf">factor</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+
+<span class="n">phi</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">factors_n</span><span class="p">:</span>
+    <span class="n">phi</span> <span class="o">*=</span> <span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">d</span> <span class="o">=</span> <span class="nf">int</span><span class="p">(</span><span class="nf">pow</span><span class="p">(</span><span class="n">e</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">phi</span><span class="p">))</span>
+<span class="n">flag</span> <span class="o">=</span> <span class="nf">long_to_bytes</span><span class="p">(</span><span class="nf">pow</span><span class="p">(</span><span class="n">c</span><span class="p">,</span><span class="n">d</span><span class="p">,</span><span class="n">n</span><span class="p">)).</span><span class="nf">decode</span><span class="p">()</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+</code></pre></div></div>
+
+  </main>
+
+</body>
+</html>

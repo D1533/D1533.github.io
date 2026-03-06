@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>RSA - Lee Cooper</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  </script>
+</head>
+<body>
+
+  <nav>
+  <div class="nav-left">
+    <ul>
+      <li><a href="/">Home</a></li>
+      <li><a href="/maths/">Maths</a></li>
+      <li><a href="/programming/">Programming</a></li>
+      <li><a href="/write-ups/">Write-ups</a></li>
+      <li><a href="/contact/">Contact</a></li>
+    </ul>
+  </div>
+
+  <div class="social-icons">
+    <a href="https://github.com/D1533" target="_blank" aria-label="GitHub">
+      <i class="fab fa-github"></i>
+    </a>
+    <a href="https://www.linkedin.com/in/david-manresa-526685294" target="_blank" aria-label="LinkedIn">
+      <i class="fab fa-linkedin"></i>
+    </a>
+  </div>
+</nav>
+
+
+  <main>
+    <hr />
+<h2 id="rootme---rsa---lee-cooper">Rootme - RSA - Lee Cooper</h2>
+<hr />
+<h2 id="description">Description</h2>
+
+<p>During a digital investigation, I managed to extract a lot of files including one that seemed rather interesting. Lacking time, I did not attempt to review its contents in depth but I’m quite sure it contains vital information. I’m counting on you to extract it !</p>
+
+<hr />
+<h2 id="solution">Solution</h2>
+
+<p>We can use the Coopersmith short pad attack and Franklin-Reiter Related Message Attack to solve this challenge.</p>
+
+<p>The combination of these two techniques helps us to find the message \(m\) when we have</p>
+
+\[c_1 \equiv (m+r_1)^e \ mod \ n, \quad  c_2 \equiv (m+r_2)^e \ mod \ n,\]
+
+<p>with \(r_1,r_2\) unknown.</p>
+
+<p>This is the exact scenario we are dealing with, since</p>
+
+\[c_1 \equiv (part1+q_1)^7 \ mod \ n_1, \quad  c_2 \equiv (part1+q_2)^7 \ mod \ n_1,\]
+
+<p>where \(q_1\) and \(q_2\) are unknown, and anagously with part2. Therefore, we can recover part1 and part2 by implementing this approach. I highly recommend reading the paper <em>20 years of Attacks on the RSA Cryptosystem</em>, where these techniques are explained and proven.</p>
+
+<p>Once we have part1 and part2, let \(int(x)\) be the function that encodes strings into integers, for example, the bytes_to_long function from PyCryptodome. Notice that this function satisfies</p>
+
+\[int(s_1+s_2) = 256^{len(s_2)}int(s_1)+ int(s_2).\]
+
+<p>The value \(c_5\) is computed as</p>
+
+\[c_5 \equiv int(w+p_1+p_2+f+e)^5 \ mod \ n,\]
+
+<p>where \(w\) is the welcome string, \(p_1\) and \(p_2\) are the part1 and part2 found previously, \(f\) is the flag, and \(e\) is the end string.</p>
+
+<p>Therefore,</p>
+
+\[\begin{align*}
+c_5 &amp;\equiv (int(w+p_1+p_2+f+e))^5 \ mod \ n\\
+&amp;\equiv (256^{len(e)} int(w+p_1+p_2+f)+int(e))^5 \ mod \ n \\
+&amp;\equiv (256^{len(e)+len(f)}int(w+p_1+p_2)+256^{len(e)}int(f) +int(e))^5 \ mod \ n.
+\end{align*}\]
+
+<p>Thus,</p>
+
+\[\begin{align*}
+c_5256^{-5len(e)} &amp;\equiv (256^{len(f)}int(w+p_1+p_2)+256^{-len(e)}int(e)+int(f))^5 \ mod \ n
+\end{align*}.\]
+
+<p>We can then construct the polynomial</p>
+
+\[f(x) = (x+b)^5-c \ mod \ n,\]
+
+<p>where</p>
+
+\[\begin{align*}
+b &amp;= 256^{len(f)}int(w+p_1+p_2)+256^{-len(e)}int(e), \\
+c &amp;= c_5256^{-5len(e)},
+\end{align*}\]
+
+<p>and find the root.</p>
+
+<p>Since we do not know the length of the flag, we can iterate on \(len(f)\) until a solution is found.</p>
+
+<p><em>SageMath script</em></p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">Crypto.Util.number</span> <span class="kn">import</span> <span class="n">bytes_to_long</span><span class="p">,</span> <span class="n">long_to_bytes</span>
+
+
+
+<span class="k">def</span> <span class="nf">coppersmith_short_pad</span><span class="p">(</span><span class="n">C1</span><span class="p">,</span> <span class="n">C2</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">eps</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="mi">25</span><span class="p">):</span>
+    <span class="n">P</span><span class="p">.</span><span class="o">&lt;</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">&gt;</span> <span class="o">=</span> <span class="nc">PolynomialRing</span><span class="p">(</span><span class="nc">Zmod</span><span class="p">(</span><span class="n">N</span><span class="p">))</span>
+    <span class="n">P2</span><span class="p">.</span><span class="o">&lt;</span><span class="n">y</span><span class="o">&gt;</span> <span class="o">=</span> <span class="nc">PolynomialRing</span><span class="p">(</span><span class="nc">Zmod</span><span class="p">(</span><span class="n">N</span><span class="p">))</span>
+
+    <span class="n">g1</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="o">^</span><span class="n">e</span> <span class="o">-</span> <span class="n">C1</span><span class="p">).</span><span class="nf">change_ring</span><span class="p">(</span><span class="n">P2</span><span class="p">)</span>
+    <span class="n">g2</span> <span class="o">=</span> <span class="p">((</span><span class="n">x</span> <span class="o">+</span> <span class="n">y</span><span class="p">)</span><span class="o">^</span><span class="n">e</span> <span class="o">-</span> <span class="n">C2</span><span class="p">).</span><span class="nf">change_ring</span><span class="p">(</span><span class="n">P2</span><span class="p">)</span>
+ 
+    <span class="n">res</span> <span class="o">=</span> <span class="n">g1</span><span class="p">.</span><span class="nf">resultant</span><span class="p">(</span><span class="n">g2</span><span class="p">,</span> <span class="n">variable</span><span class="o">=</span><span class="n">x</span><span class="p">)</span>
+
+    <span class="n">roots</span> <span class="o">=</span> <span class="n">res</span><span class="p">.</span><span class="nf">univariate_polynomial</span><span class="p">().</span><span class="nf">change_ring</span><span class="p">(</span><span class="nc">Zmod</span><span class="p">(</span><span class="n">N</span><span class="p">)).</span><span class="nf">small_roots</span><span class="p">(</span><span class="n">epsilon</span><span class="o">=</span><span class="n">eps</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">roots</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    
+<span class="k">def</span> <span class="nf">franklin_reiter</span><span class="p">(</span><span class="n">C1</span><span class="p">,</span> <span class="n">C2</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">e</span><span class="p">):</span>
+    <span class="n">P</span><span class="p">.</span><span class="o">&lt;</span><span class="n">x</span><span class="o">&gt;</span> <span class="o">=</span> <span class="nc">PolynomialRing</span><span class="p">(</span><span class="nc">Zmod</span><span class="p">(</span><span class="n">N</span><span class="p">))</span>
+
+    <span class="n">g1</span> <span class="o">=</span> <span class="n">x</span><span class="o">^</span><span class="n">e</span> <span class="o">-</span> <span class="n">C1</span>
+    <span class="n">g2</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="o">+</span><span class="n">r</span><span class="p">)</span><span class="o">^</span><span class="n">e</span> <span class="o">-</span> <span class="n">C2</span>
+
+    <span class="k">def</span> <span class="nf">gcd</span><span class="p">(</span><span class="n">g1</span><span class="p">,</span> <span class="n">g2</span><span class="p">):</span>
+        <span class="k">while</span> <span class="n">g2</span><span class="p">:</span>
+            <span class="n">g1</span><span class="p">,</span> <span class="n">g2</span> <span class="o">=</span> <span class="n">g2</span><span class="p">,</span> <span class="n">g1</span> <span class="o">%</span> <span class="n">g2</span>
+        <span class="k">return</span> <span class="n">g1</span><span class="p">.</span><span class="nf">monic</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="o">-</span><span class="nf">gcd</span><span class="p">(</span><span class="n">g1</span><span class="p">,</span> <span class="n">g2</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="n">n1</span>    <span class="o">=</span> <span class="mi">19024735469446738897010826476902327906191591414227964731475027466604662034844504812824293484100327009001145152922656382558107511381348217394168412685611505383589345846702811489070194424735732826494284212762453254054749576089123495565366820812376516502428850771836366879770866850828882765098829561153957252358110703016110387108392828235223603854031766317948738660421845869886222867777138939937142289478534010938755160508192635761571099891980898250932383297389521028936556889772228696122609598593236344053060137889036639042712469782559406350102303275804114728303523465859577872867653030430841822048306711256386416922373</span>
+<span class="n">n</span>     <span class="o">=</span> <span class="mi">672411991189942363337938159545981882089815408404717059540321496051848528592677685721043114537450028154597711562868337788216178771529295807619280176143684995699108772148242931406811191915545427017467465912214581861752294329154711673713865913545620542673403735016671615579437076595263747176743393297640756211801479387299185127864394577416786114866869757272102391069104065612150277013795025480088043898910240038874074128213640706305897071325127411701738756636441510122664399370076951793613666942349304084388643546487437777280661872435116581910850167903765883542814010929187107220614491937147485166532956993093853191794320213718625426158357833113235837644554650134229418147946835754160108610516767156325748550100710278170612799324084509158218914343421326955084339568106086640363370911145808605247662927277245142436368098569834384197503676227300051057041289285425607737521221868076067073079142872060867369897508223051602776925205400480972499857736204370242435052346592367689848251672861700821310765832219056622103972513305335836200250278452403105633846266768347125148723653882451473817246439743006247913782771582060697686515423496562405372062054651619753445716606526783023669146178318346613537008172586720033468678415684915116193160856993</span>
+<span class="n">c1</span>    <span class="o">=</span> <span class="mi">8702596914040715460526477594091904640378152303788091659056751391358636683062533618490537147605617692160155873167873910923360373015233783712051638364652167240629389817365066036511039674589265813684601232786248073978061893492226518382519406188747999375431386320178508110089548568474273770156592381454539561510350270549731262709295933589996958922365575910767886152267506372834256758526621019302461911575759741687638689094642090559571088197349871287350820522867018799404825490666530213759315454373648729386639655020718720991842576862896586388876072667159051530624076381587421468651033211174886957238023259543758002957590</span>
+<span class="n">c2</span>    <span class="o">=</span> <span class="mi">1869115358944438851018899793682333883813952495839960631390911629551581930534881929507593330579004720293690569041383545300438984164663552373649954237708741161489754179296683640158155412253720145670052684088883622366103464482244074806502330840927946834446434924745506133367901591758975530418875214855797957471278162222617037736198649181203301658657777485120248005321064182842655831038887006816568211282187436175496661014948728623269688238144173504172275783683862500743240473173730699185167061003949163974914089726153135453251046704040208141943752975240896429900875459655587912143094423833170019142050099813808916439318</span>
+<span class="n">c3</span>    <span class="o">=</span> <span class="mi">3013147297595224949092956576340603323558949862888779308149724613753084528909213734201903714341284907560336278824463104633858039394286773173979818188082279834066968708208951827868745573313372424754504074366033401893992270438630473708851937545311584820789382836684966159637522789862352429762110809205416691437598103582442752189196056576910222008828291403130708050975793593507782335654634063364088116778120964750489634302969761753032760932012487933633040038972353957146815166912950739351150438968712088481774446657884797370377080434581717307157893942261704520051683879211310422827220640117967646690775970902906349956290</span>
+<span class="n">c4</span>    <span class="o">=</span> <span class="mi">17366490381682854482812684344317019587967020021622835820934030807376004299827718324443264305738674236194357030682563555199019471115558811703547573661189025321908212071962393094779747974863114193159834799998831505471353951314408263068282990122051434289216205853053900643127139900300794646803650184368717195601758788889316851116236586700062626920797083793218325147945445813015172448161270057294957592828785368210405003643088768465616187373628141952287705624135918068212778192372141604703122219941699085657806219850453685046502762507302560737434613445844523057744148326121389456569111726622430605994149637245747900362991</span>
+<span class="n">c5</span>    <span class="o">=</span> <span class="mi">355084153154920445795158678493978557338858742161206602993438062122888144365196273490393056476945717390760269034972780620861188459060487989892939770676781089533009626151706983911499786649717022124722958084625370810311519185692907640233590052482058567862312458366835988935104232002731096815068918536893825392725173875589931163342623769261690743454535613465283120245332780170359998098240341945657492024152325993242057334566745824050035986564324906529861775600951377251094120144764356567110460457736349497103109257102733511904413973574537801522196328304481061044286353570140269923420527270821020352885190858413651297911308916770632368073289185813035235103371939911005585147665391543546869006675002808341172354586111178581139967427031612353348583528336061885980373132944013777800417832461896857134290630699686091754425886678506427686937166118516887312467774933867980434454939500668440331238445376429188097313917961617920429570796428484332380905890598660393567398002775223769149366008387420977667389194545723705602771994473296039368898931640311429642492566645381610253952663741774001990691013196503816486461336186366200290568019346469868365342955002576506223445027923899787636406079922967135303907231175596230698977005132663589199615196724</span>
+
+
+
+<span class="n">diff</span> <span class="o">=</span> <span class="nf">coppersmith_short_pad</span><span class="p">(</span><span class="n">c1</span><span class="p">,</span> <span class="n">c2</span><span class="p">,</span> <span class="n">n1</span><span class="p">,</span> <span class="n">e</span> <span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mi">1</span><span class="o">/</span><span class="mi">80</span><span class="p">)</span>
+<span class="n">part1</span> <span class="o">=</span> <span class="nf">franklin_reiter</span><span class="p">(</span><span class="n">c1</span><span class="p">,</span> <span class="n">c2</span><span class="p">,</span> <span class="n">n1</span><span class="p">,</span> <span class="n">diff</span><span class="p">,</span> <span class="n">e</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+
+<span class="n">diff</span> <span class="o">=</span> <span class="nf">coppersmith_short_pad</span><span class="p">(</span><span class="n">c3</span><span class="p">,</span> <span class="n">c4</span><span class="p">,</span> <span class="n">n1</span><span class="p">,</span> <span class="n">e</span> <span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mi">1</span><span class="o">/</span><span class="mi">80</span><span class="p">)</span>
+<span class="n">part2</span> <span class="o">=</span> <span class="nf">franklin_reiter</span><span class="p">(</span><span class="n">c3</span><span class="p">,</span> <span class="n">c4</span><span class="p">,</span> <span class="n">n1</span><span class="p">,</span> <span class="n">diff</span><span class="p">,</span> <span class="n">e</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+
+ 
+<span class="n">welcome</span> <span class="o">=</span> <span class="sh">"</span><span class="s">Welcome ! This challenge is supposed to be complex but I</span><span class="sh">'</span><span class="s">m pretty sure that you will find the flag in a sec.</span><span class="se">\n</span><span class="sh">"</span>
+<span class="n">end</span>     <span class="o">=</span> <span class="sh">"</span><span class="se">\n</span><span class="s">I hope you enjoyed the challenge !!</span><span class="sh">"</span>
+<span class="n">part1</span> <span class="o">=</span> <span class="nf">long_to_bytes</span><span class="p">(</span><span class="nf">int</span><span class="p">(</span><span class="n">part1</span><span class="p">)).</span><span class="nf">decode</span><span class="p">(</span><span class="n">errors</span><span class="o">=</span><span class="sh">'</span><span class="s">ignore</span><span class="sh">'</span><span class="p">).</span><span class="nf">split</span><span class="p">(</span><span class="sh">'</span><span class="s">|</span><span class="sh">'</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">part2</span> <span class="o">=</span> <span class="nf">long_to_bytes</span><span class="p">(</span><span class="nf">int</span><span class="p">(</span><span class="n">part2</span><span class="p">)).</span><span class="nf">decode</span><span class="p">(</span><span class="n">errors</span><span class="o">=</span><span class="sh">'</span><span class="s">ignore</span><span class="sh">'</span><span class="p">).</span><span class="nf">split</span><span class="p">(</span><span class="sh">'</span><span class="s">|</span><span class="sh">'</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+
+
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">100</span><span class="p">):</span>
+
+    <span class="n">b</span> <span class="o">=</span> <span class="nf">pow</span><span class="p">(</span><span class="mi">256</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="n">n</span><span class="p">)</span><span class="o">*</span><span class="nf">bytes_to_long</span><span class="p">(</span> <span class="p">(</span><span class="n">welcome</span><span class="o">+</span><span class="n">part1</span><span class="o">+</span><span class="n">part2</span><span class="p">).</span><span class="nf">encode</span><span class="p">())</span> <span class="o">+</span> <span class="nf">pow</span><span class="p">(</span><span class="mi">256</span><span class="p">,</span><span class="o">-</span><span class="nf">len</span><span class="p">(</span><span class="n">end</span><span class="p">),</span><span class="n">n</span><span class="p">)</span><span class="o">*</span><span class="nf">bytes_to_long</span><span class="p">(</span><span class="n">end</span><span class="p">.</span><span class="nf">encode</span><span class="p">())</span>
+    <span class="n">P</span><span class="p">.</span><span class="o">&lt;</span><span class="n">x</span><span class="o">&gt;</span> <span class="o">=</span> <span class="nc">PolynomialRing</span><span class="p">(</span><span class="nc">Zmod</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="n">b</span><span class="p">)</span><span class="o">^</span><span class="mi">5</span> <span class="o">-</span> <span class="n">c5</span><span class="o">*</span><span class="nf">pow</span><span class="p">(</span><span class="mi">256</span><span class="p">,</span><span class="o">-</span><span class="mi">5</span><span class="o">*</span><span class="nf">len</span><span class="p">(</span><span class="n">end</span><span class="p">),</span><span class="n">n</span><span class="p">)</span>
+    <span class="n">roots</span> <span class="o">=</span> <span class="n">f</span><span class="p">.</span><span class="nf">small_roots</span><span class="p">(</span><span class="mi">256</span><span class="o">**</span><span class="p">(</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span><span class="n">eps</span><span class="o">=</span><span class="mi">1</span><span class="o">/</span><span class="mi">20</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nf">len</span><span class="p">(</span><span class="n">roots</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">flag</span> <span class="o">=</span> <span class="nf">int</span><span class="p">(</span><span class="n">roots</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="nf">print</span><span class="p">(</span><span class="nf">long_to_bytes</span><span class="p">(</span><span class="n">flag</span><span class="p">).</span><span class="nf">decode</span><span class="p">())</span>
+        <span class="k">break</span>
+
+
+</code></pre></div></div>
+
+  </main>
+
+</body>
+</html>

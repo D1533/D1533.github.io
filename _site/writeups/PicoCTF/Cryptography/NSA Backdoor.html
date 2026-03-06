@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>NSA Backdoor</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  </script>
+</head>
+<body>
+
+  <nav>
+  <div class="nav-left">
+    <ul>
+      <li><a href="/">Home</a></li>
+      <li><a href="/maths/">Maths</a></li>
+      <li><a href="/programming/">Programming</a></li>
+      <li><a href="/write-ups/">Write-ups</a></li>
+      <li><a href="/contact/">Contact</a></li>
+    </ul>
+  </div>
+
+  <div class="social-icons">
+    <a href="https://github.com/D1533" target="_blank" aria-label="GitHub">
+      <i class="fab fa-github"></i>
+    </a>
+    <a href="https://www.linkedin.com/in/david-manresa-526685294" target="_blank" aria-label="LinkedIn">
+      <i class="fab fa-linkedin"></i>
+    </a>
+  </div>
+</nav>
+
+
+  <main>
+    <hr />
+<h2 id="picoctf---nsa-backdoor">PicoCTF - NSA Backdoor</h2>
+<hr />
+
+<h2 id="description">Description</h2>
+<p>I heard someone has been sneakily installing backdoors in open-source implementations of Diffie-Hellman… I wonder who it could be… ;)</p>
+
+<hr />
+<h2 id="solution">Solution</h2>
+
+<p>We can solve this challenge using the Pollard’s \(p-1\) factorization and the Pohlig Hellman algorithm. First, let’s introduce the math behind these concepts.</p>
+
+<h3 id="pollards-p-1-factorization">Pollard’s \(p-1\) factorization</h3>
+<p>Pollard’s p-1 factoring method leverages the fact that if \(p\) is a prime divisor of \(n\) and \(p-1\) is \(B\)-smooth, then for some suitably chosen \(M\) such that \(M \mid (p-1)\), i.e , \(M = k(p-1)\) for some \(k \in \mathbb{Z}\), Fermat’s Little Theorem implies</p>
+
+\[a ^ M \equiv a^{k(p-1)} \equiv (a^{p-1})^k \equiv 1 \ mod \ p,\]
+
+<p>and therefore \(p \mid (a^M - 1)\).</p>
+
+<p>Since \(p\) also divides \(n\), it follows that</p>
+
+\[gcd(a^M-1,n)\]
+
+<p>might return a non-trivial factor of \(n\).</p>
+
+<p>There are efficient ways to find such \(M\), but for this challenge, brute forcing it is sufficient.</p>
+
+<p>Once \(p\) is found, we can recover \(q = n/p\).</p>
+
+<p><br /></p>
+<h3 id="pohlig-hellman-algorithm">Pohlig Hellman Algorithm</h3>
+<p>Suppose we want to solve the discrete logarithm problem</p>
+
+\[h \equiv g^x \ mod \ p,\]
+
+<p>where \(p-1\) is \(B\)-smooth, that is, we have the prime factorization \(p-1 = q_1^{e_1}\cdots q_k^{e_k}\), with \(q_i \leq B\) for some \(B &gt; 0\).</p>
+
+<p>Let</p>
+
+\[\begin{align*}
+g_i &amp;\equiv g^{(p-1)/q_i^{e_i}} \ mod \ p, \\
+h_i &amp;\equiv h^{(p-1)/q_i^{e_i}} \ mod \ p. 
+\end{align*}\]
+
+<p>If we solve the discrete logaritm problems</p>
+
+\[\begin{align*}
+h_1 &amp;\equiv g_1^{x_1} \ mod \ p, \\
+h_2 &amp;\equiv g_2^{x_2} \ mod \ p, \\
+ &amp; \ \ \vdots \\
+h_k &amp;\equiv g_k^{x_k} \ mod \ p,
+\end{align*}\]
+
+<p>then \(x \equiv x_i \ mod \ q_i^{e_i}\) for all \(i = 1, \cdots, k\) and we can use the Chinese Remainder Theorem to recover \(x \ mod \ p - 1\). That’s because</p>
+
+\[h \equiv g^x \ mod \ p \implies h ^{(p-1)/q_i^{e_i}} \equiv g^{x(p-1)/q_i^{e_i}} \ mod \ p,\]
+
+<p>therefore \(h_i \equiv g_i^x \ mod \ p\), and since \(ord(g_i) = q_i^{e_i}\), then \(x \equiv x_i \ mod \ q_i^{e_i}\).</p>
+
+<p><br /></p>
+<h3 id="challenge-application">Challenge application</h3>
+<p>In our challenge, we have to solve</p>
+
+\[c \equiv 3^x \ mod \ n,\]
+
+<p>where \(n = pq\).</p>
+
+<p>Once we know the factorization of \(n\) using Pollard’s \(p-1\), we can use Pohlig Hellman algorithm for \(p\) and \(q\). The only subtlety here is that \(gcd(p-1,q-1) = 2\). Therefore, we can apply Pohlig Hellman to \((p-1)/2\) and \(q\), finding \(x_p \ mod \ (p-1)/2\) and \(x_q \ mod \ q-1\), and recovering 
+\(x\) applying again the Chinese Remainder Theorem.</p>
+
+<p>Finally, after decoding \(x\), one can find that the flag is not recovered, that is because even though we have found a \(x\) such that \(c \equiv 3^x \ mod  \ n\), we also have that \(c \equiv 3^{x \pm kord(3)} \ mod \ p\). After some tries, one can find that \(x - \dfrac{(p-1)(q-1)}{4}\) gives the correct solution.</p>
+
+<p><em>SageMath script</em></p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">math</span> <span class="kn">import</span> <span class="n">gcd</span>
+<span class="kn">from</span> <span class="n">Crypto.Util.number</span> <span class="kn">import</span> <span class="n">long_to_bytes</span>
+
+<span class="n">n</span> <span class="o">=</span> <span class="mh">0x98a3425eee4016a2592706867127e6c52ab2cf8077806f5626095e3afadc73cb4d0e747c5b9bf6234242e9578b12aba5e391e04a5cd2730f6e45d9f0758fb69eb32e0070b9efd3470f6571a8443bae63cd16efcb3e945dc3da1ce46993be4c8b4467ffb4e0525428bb8673ba144b0d36d1c34fe87307d68439070da27a8809551aa6cdf55c39c79bb7b6b7b9c26b45ef79f6c1ebf68033e4beab2d24df66f69dfb7f54d70d3b477fc7b67592cb029dfe6341c591c34a127f84b33626cd117707b69d1ed55f1773e3ba8d26b76f2db95e85de14a6aa1ff3de7fa23ce9f7ebd0e6c18c2fef4bbff47b6bd632d2d767aab7d35bf4d8577e50556626096704f0c425</span>
+<span class="n">c</span> <span class="o">=</span> <span class="mh">0x8788542cefd7490c9282c06b8d24280d56c6706b996bdf580290cdf2cb90e45efd2ce185fc07d2b916c24b0512d38ca14de0ee608a9d6003f258859bbbed97dad15c1d07410a34fd55cd8305eb43418d38f1ca6e024725b97fd9da701a39c23fe55a13d43b4bf9a3d9ebb44d7fe67bd60beffc29ec27bb4baf05ec5b250bfa68360df0d1379c066297a7878e59d27e68cf6a0da90755450827623e54e4f3d9f280fef53c7620d58decfbd10dd64e9d1d5507b5460603c58f5be70c82e2a8e613d730a950caea4c4389c5fc0521f8207ead5fb26c04eb6d0486fd6fe8d015fdabbda00139b42163acc86ffb30c12988058c6247344c42b8f3cdc984c06f4276f8</span>
+
+
+<span class="k">def</span> <span class="nf">pollard</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">j</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="k">while</span> <span class="bp">True</span><span class="p">:</span> 
+        <span class="n">a</span> <span class="o">=</span> <span class="nf">pow</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">n</span><span class="p">)</span>
+        <span class="n">g</span> <span class="o">=</span> <span class="nf">gcd</span><span class="p">(</span><span class="n">a</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">n</span><span class="p">)</span>
+        <span class="k">if</span> <span class="mi">1</span> <span class="o">&lt;</span> <span class="n">g</span> <span class="ow">and</span> <span class="n">g</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">g</span>
+        <span class="n">j</span> <span class="o">+=</span> <span class="mi">1</span>
+
+<span class="k">def</span> <span class="nf">pohlig_hellman</span><span class="p">(</span><span class="n">g</span><span class="p">,</span><span class="n">h</span><span class="p">,</span><span class="n">p</span><span class="p">,</span> <span class="n">factors</span><span class="p">):</span>
+    <span class="n">remainders</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">moduli</span> <span class="o">=</span> <span class="p">[]</span>
+    
+    <span class="k">for</span> <span class="n">q</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">factors</span><span class="p">:</span>
+        <span class="n">qe</span> <span class="o">=</span> <span class="n">q</span><span class="o">^</span><span class="n">e</span>
+        
+        <span class="n">g_q</span> <span class="o">=</span> <span class="nf">pow</span><span class="p">(</span><span class="n">g</span><span class="p">,(</span><span class="n">p</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="n">qe</span><span class="p">,</span><span class="n">p</span><span class="p">)</span>
+        <span class="n">h_q</span> <span class="o">=</span> <span class="nf">pow</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="p">(</span><span class="n">p</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="n">qe</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+
+        <span class="n">x_q</span> <span class="o">=</span> <span class="nf">discrete_log</span><span class="p">(</span><span class="n">h_q</span><span class="p">,</span> <span class="n">g_q</span><span class="p">,</span> <span class="nb">ord</span><span class="o">=</span><span class="n">qe</span><span class="p">)</span>
+
+        <span class="n">remainders</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">x_q</span><span class="p">)</span>
+        <span class="n">moduli</span><span class="p">.</span><span class="nf">append</span><span class="p">(</span><span class="n">qe</span><span class="p">)</span>
+
+    <span class="n">x</span> <span class="o">=</span> <span class="nf">crt</span><span class="p">(</span><span class="n">remainders</span><span class="p">,</span> <span class="n">moduli</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">x</span>
+
+
+<span class="n">p</span> <span class="o">=</span> <span class="nf">pollard</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+<span class="n">q</span> <span class="o">=</span> <span class="n">n</span><span class="o">//</span><span class="n">p</span>
+
+
+<span class="n">x_p</span> <span class="o">=</span> <span class="nf">pohlig_hellman</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="n">c</span><span class="p">,</span><span class="n">p</span><span class="p">,</span><span class="nf">list</span><span class="p">(</span><span class="nf">factor</span><span class="p">(</span><span class="n">p</span><span class="o">-</span><span class="mi">1</span><span class="p">))[</span><span class="mi">1</span><span class="p">:])</span>
+<span class="n">x_q</span> <span class="o">=</span> <span class="nf">pohlig_hellman</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="n">c</span><span class="p">,</span><span class="n">q</span><span class="p">,</span><span class="nf">list</span><span class="p">(</span><span class="nf">factor</span><span class="p">(</span><span class="n">q</span><span class="o">-</span><span class="mi">1</span><span class="p">)))</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="nf">crt</span><span class="p">([</span><span class="n">x_p</span><span class="p">,</span><span class="n">x_q</span><span class="p">],[(</span><span class="n">p</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">//</span><span class="mi">2</span><span class="p">,</span><span class="n">q</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+<span class="n">x</span> <span class="o">-=</span> <span class="p">(</span><span class="n">p</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">q</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">//</span><span class="mi">4</span>
+<span class="n">flag</span> <span class="o">=</span> <span class="nf">long_to_bytes</span><span class="p">(</span><span class="n">x</span><span class="p">).</span><span class="nf">decode</span><span class="p">()</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+
+</code></pre></div></div>
+
+  </main>
+
+</body>
+</html>

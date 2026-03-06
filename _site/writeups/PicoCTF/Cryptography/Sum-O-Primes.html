@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Sum-O-Primes</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  </script>
+</head>
+<body>
+
+  <nav>
+  <div class="nav-left">
+    <ul>
+      <li><a href="/">Home</a></li>
+      <li><a href="/maths/">Maths</a></li>
+      <li><a href="/programming/">Programming</a></li>
+      <li><a href="/write-ups/">Write-ups</a></li>
+      <li><a href="/contact/">Contact</a></li>
+    </ul>
+  </div>
+
+  <div class="social-icons">
+    <a href="https://github.com/D1533" target="_blank" aria-label="GitHub">
+      <i class="fab fa-github"></i>
+    </a>
+    <a href="https://www.linkedin.com/in/david-manresa-526685294" target="_blank" aria-label="LinkedIn">
+      <i class="fab fa-linkedin"></i>
+    </a>
+  </div>
+</nav>
+
+
+  <main>
+    <hr />
+<h2 id="picoctf---sum-o-primes">PicoCTF - Sum-O-Primes</h2>
+<hr />
+
+<h2 id="description">Description</h2>
+<p>We have so much faith in RSA we give you not just the product of the primes, but their sum as well!</p>
+
+<hr />
+<h2 id="solution">Solution</h2>
+
+<p>The challenge provides us with the following python script</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#!/usr/bin/python
+</span>
+<span class="kn">from</span> <span class="n">binascii</span> <span class="kn">import</span> <span class="n">hexlify</span>
+<span class="kn">from</span> <span class="n">gmpy2</span> <span class="kn">import</span> <span class="n">mpz_urandomb</span><span class="p">,</span> <span class="n">next_prime</span><span class="p">,</span> <span class="n">random_state</span>
+<span class="kn">import</span> <span class="n">math</span>
+<span class="kn">import</span> <span class="n">os</span>
+<span class="kn">import</span> <span class="n">sys</span>
+
+<span class="k">if</span> <span class="n">sys</span><span class="p">.</span><span class="n">version_info</span> <span class="o">&lt;</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">9</span><span class="p">):</span>
+    <span class="kn">import</span> <span class="n">gmpy2</span>
+    <span class="n">math</span><span class="p">.</span><span class="n">gcd</span> <span class="o">=</span> <span class="n">gmpy2</span><span class="p">.</span><span class="n">gcd</span>
+    <span class="n">math</span><span class="p">.</span><span class="n">lcm</span> <span class="o">=</span> <span class="n">gmpy2</span><span class="p">.</span><span class="n">lcm</span>
+
+<span class="n">FLAG</span>  <span class="o">=</span> <span class="nf">open</span><span class="p">(</span><span class="sh">'</span><span class="s">flag.txt</span><span class="sh">'</span><span class="p">).</span><span class="nf">read</span><span class="p">().</span><span class="nf">strip</span><span class="p">()</span>
+<span class="n">FLAG</span>  <span class="o">=</span> <span class="nf">int</span><span class="p">(</span><span class="nf">hexlify</span><span class="p">(</span><span class="n">FLAG</span><span class="p">.</span><span class="nf">encode</span><span class="p">()),</span> <span class="mi">16</span><span class="p">)</span>
+<span class="n">SEED</span>  <span class="o">=</span> <span class="nf">int</span><span class="p">(</span><span class="nf">hexlify</span><span class="p">(</span><span class="n">os</span><span class="p">.</span><span class="nf">urandom</span><span class="p">(</span><span class="mi">32</span><span class="p">)).</span><span class="nf">decode</span><span class="p">(),</span> <span class="mi">16</span><span class="p">)</span>
+<span class="n">STATE</span> <span class="o">=</span> <span class="nf">random_state</span><span class="p">(</span><span class="n">SEED</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">get_prime</span><span class="p">(</span><span class="n">bits</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nf">next_prime</span><span class="p">(</span><span class="nf">mpz_urandomb</span><span class="p">(</span><span class="n">STATE</span><span class="p">,</span> <span class="n">bits</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="p">(</span><span class="n">bits</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)))</span>
+
+<span class="n">p</span> <span class="o">=</span> <span class="nf">get_prime</span><span class="p">(</span><span class="mi">1024</span><span class="p">)</span>
+<span class="n">q</span> <span class="o">=</span> <span class="nf">get_prime</span><span class="p">(</span><span class="mi">1024</span><span class="p">)</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">p</span> <span class="o">+</span> <span class="n">q</span>
+<span class="n">n</span> <span class="o">=</span> <span class="n">p</span> <span class="o">*</span> <span class="n">q</span>
+
+<span class="n">e</span> <span class="o">=</span> <span class="mi">65537</span>
+
+<span class="n">m</span> <span class="o">=</span> <span class="n">math</span><span class="p">.</span><span class="nf">lcm</span><span class="p">(</span><span class="n">p</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">q</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">d</span> <span class="o">=</span> <span class="nf">pow</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span>
+
+<span class="n">c</span> <span class="o">=</span> <span class="nf">pow</span><span class="p">(</span><span class="n">FLAG</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+
+<span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">'</span><span class="s">x = </span><span class="si">{</span><span class="n">x</span><span class="si">:</span><span class="n">x</span><span class="si">}</span><span class="sh">'</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">'</span><span class="s">n = </span><span class="si">{</span><span class="n">n</span><span class="si">:</span><span class="n">x</span><span class="si">}</span><span class="sh">'</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">'</span><span class="s">c = </span><span class="si">{</span><span class="n">c</span><span class="si">:</span><span class="n">x</span><span class="si">}</span><span class="sh">'</span><span class="p">)</span>
+
+</code></pre></div></div>
+<p>We are given \(n,c\) and \(x\) so do not get confused by the weird notation of the challenge, \(x = p + q\) is known.</p>
+
+<p>Since \(n = pq\) and \(x = p + q\), we have that</p>
+
+\[p = x - q = x - \frac{n}{p},\]
+
+<p>Multypling both sides by \(p\) and rearranging, we obtain</p>
+
+\[p^2 - xp + n = 0,\]
+
+<p>which can be solved easily for \(p\) using the quadratic formula</p>
+
+\[p = \frac{x \pm \sqrt{x^2 - 4n}}{2}.\]
+
+<p>In this case, both roots work, so you can use whichever you prefer.</p>
+
+<p>Once we have \(p\), we can compute \(q = n/p\), recover the private key \(d = e^{-1} \ mod \ \varphi(n)\) where \(\varphi(n) = (p-1)(q-1)\) and decrypt the flag as \(m = c^d \ mod \ n\).</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">gmpy2</span> <span class="kn">import</span> <span class="n">iroot</span>
+<span class="kn">from</span> <span class="n">Crypto.Util.number</span> <span class="kn">import</span> <span class="n">long_to_bytes</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="mh">0x152a1447b61d023bebab7b1f8bc9d934c2d4b0c8ef7e211dbbcf841136d030e3c829f222cec318f6f624eb529b54bcda848f65574896d70cd6c3460d0c9064cd66e826578c2035ab63da67d069fa302227a9012422d2402f8f0d4495ef66104ebd774f341aa62f493184301debf910ab3d1e72e357a99c460370254f3dfccd9ae</span>
+<span class="n">n</span> <span class="o">=</span> <span class="mh">0x6fc1b2be753e8f480c8b7576f77d3063906a6a024fe954d7fd01545e8f5b6becc24d70e9a5bc034a4c00e61f8a6176feb7d35fe39c8c03617ea4552840d93aa09469716913b58df677c785cd7633d1b7d31e2222cab53be235aa412ac5c5b07b500cf3fd5d6b91e2ddc51bff1e6eec2cb68723af668df36e10e332a9cbb7f3e2df9593fa0e553ed58afec2aa3bc4ae8ef1140e4779f61bdeae4c0b46136294cf151622e83c3d71b97c815b542208baa28207225f134c5a4feac998aeb178a5552f08643717819c10e8b5ec7715696c3bf4434fbea8e8a516dfd90046a999e24a0fb10d27291eb29ef3f285149c20189e7d0190417991094948180196543b8c91</span>
+<span class="n">c</span> <span class="o">=</span> <span class="mh">0x16acf84a73cefd321ed491a15c640a495b09050cdce435ec37442faf9a694775e1ebffb6dbad6133cbc54e3f641506b0613f711625594fcb467f915f2708714b4c9936f5f4752c3299157cff4eb68eb82c0054dae351314829974f4feadaf126cda92b97e348dbef2640ec3a729a064e615df73d644700f93bf87579683e253d29622525bea3644f59aac8e0b2553bfea48d99e9b323e03cbf55166659974eb8c51cc7b2c2c5d6aa6c01b056a8ed7283d96656a3496f266726605af1be139d586f208d4d7c59c2771dc8036d490d3672ee4513301002775d7c39eac421c6cb4f01344e061549a4cb11c057accef1726572e447501004c772ec91b4a55811280f</span>
+<span class="n">e</span> <span class="o">=</span> <span class="mi">65537</span>
+
+
+<span class="n">delta</span> <span class="o">=</span> <span class="nf">iroot</span><span class="p">(</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="o">-</span><span class="mi">4</span><span class="o">*</span><span class="n">n</span><span class="p">,</span><span class="mi">2</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">p</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="n">delta</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span>
+
+<span class="n">q</span> <span class="o">=</span> <span class="n">n</span><span class="o">//</span><span class="n">p</span>
+<span class="n">phi</span> <span class="o">=</span> <span class="p">(</span><span class="n">p</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">q</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">d</span> <span class="o">=</span> <span class="nf">pow</span><span class="p">(</span><span class="n">e</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">phi</span><span class="p">)</span>
+
+<span class="n">flag</span> <span class="o">=</span> <span class="nf">long_to_bytes</span><span class="p">(</span><span class="nf">pow</span><span class="p">(</span><span class="n">c</span><span class="p">,</span><span class="n">d</span><span class="p">,</span><span class="n">n</span><span class="p">)).</span><span class="nf">decode</span><span class="p">()</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+</code></pre></div></div>
+
+  </main>
+
+</body>
+</html>

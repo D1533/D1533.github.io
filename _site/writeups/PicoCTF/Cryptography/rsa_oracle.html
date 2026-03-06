@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>rsa_oracle</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  </script>
+</head>
+<body>
+
+  <nav>
+  <div class="nav-left">
+    <ul>
+      <li><a href="/">Home</a></li>
+      <li><a href="/maths/">Maths</a></li>
+      <li><a href="/programming/">Programming</a></li>
+      <li><a href="/write-ups/">Write-ups</a></li>
+      <li><a href="/contact/">Contact</a></li>
+    </ul>
+  </div>
+
+  <div class="social-icons">
+    <a href="https://github.com/D1533" target="_blank" aria-label="GitHub">
+      <i class="fab fa-github"></i>
+    </a>
+    <a href="https://www.linkedin.com/in/david-manresa-526685294" target="_blank" aria-label="LinkedIn">
+      <i class="fab fa-linkedin"></i>
+    </a>
+  </div>
+</nav>
+
+
+  <main>
+    <hr />
+<h2 id="picoctf---rsa_oracle">PicoCTF - rsa_oracle</h2>
+<hr />
+
+<h2 id="description">Description</h2>
+
+<p>Can you abuse the oracle? An attacker was able to intercept communications between a bank and a fintech company. They managed to get the message (ciphertext) and the password that was used to encrypt the message. After some intensive reconassainance they found out that the bank has an oracle that was used to encrypt the password and can be found here nc titan.picoctf.net 59219. Decrypt the password and use it to decrypt the message. The oracle can decrypt anything except the password.</p>
+
+<hr />
+<h2 id="solution">Solution</h2>
+
+<p>Suppose we have an oracle that, given a message \(k \in \mathbb{Z}_N\), returns the ciphertext</p>
+
+\[c_k = k^e \ mod \ N,\]
+
+<p>and, given the ciphertext \(c_k\), returns the corresponding plaintext</p>
+
+\[k = c_k^d \ mod \ N.\]
+
+<p>Naturally, the oracle does not accept the encrypted password for decryption.</p>
+
+<p>Now, let \(c\) be the ciphertext corresponding to the password \(m\), so our objective is to recover \(m\). If we send the oracle the product \(c_kc\) to decrypt, the oracle will return some \(M\) computed as</p>
+
+\[M \equiv (c_kc)^d \ mod \ N.\]
+
+<p>Since \(c_k^d \equiv k \ mod \ N\) and \(c^d \equiv m \ mod \ N\), by the propeties of modular arithmetic, we have</p>
+
+\[(c_kc)^d \equiv c_k^dc^d \equiv km \ mod \ N,\]
+
+<p>so \(M \equiv km \ mod \ N\) and therefore</p>
+
+\[m \equiv Mk^{-1} \ mod \ N.\]
+
+<p>Notice that we do not know \(N\) so we cannot compute \(k^{-1} \ mod  \ N\). However, if we choose \(k = 2\), it is possible that \(km &lt; N\) and therefore \(m = M/2\).</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">pwn</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="n">enc_password</span> <span class="o">=</span> <span class="mi">3567252736412634555920569398403787395170577668834666742330267390011828943495692402033350307843527370186546259265692029368644049938630024394169760506488003</span>
+
+<span class="n">r</span> <span class="o">=</span> <span class="nf">remote</span><span class="p">(</span><span class="sh">"</span><span class="s">titan.picoctf.net</span><span class="sh">"</span><span class="p">,</span> <span class="mi">59219</span><span class="p">)</span>
+
+<span class="n">r</span><span class="p">.</span><span class="nf">sendline</span><span class="p">(</span><span class="sa">b</span><span class="sh">'</span><span class="s">E</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">r</span><span class="p">.</span><span class="nf">recv</span><span class="p">()</span>
+<span class="n">r</span><span class="p">.</span><span class="nf">sendline</span><span class="p">(</span><span class="sa">b</span><span class="sh">'</span><span class="se">\x02</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">r</span><span class="p">.</span><span class="nf">recvuntil</span><span class="p">(</span><span class="sa">b</span><span class="sh">'</span><span class="s">mod n) </span><span class="sh">'</span><span class="p">)</span>
+
+<span class="n">k</span> <span class="o">=</span> <span class="n">r</span><span class="p">.</span><span class="nf">recvline</span><span class="p">().</span><span class="nf">decode</span><span class="p">()</span>
+<span class="n">payload</span> <span class="o">=</span> <span class="nf">int</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="o">*</span><span class="n">enc_password</span>
+
+<span class="n">r</span><span class="p">.</span><span class="nf">recv</span><span class="p">()</span>
+<span class="n">r</span><span class="p">.</span><span class="nf">sendline</span><span class="p">(</span><span class="sa">b</span><span class="sh">'</span><span class="s">D</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">r</span><span class="p">.</span><span class="nf">sendline</span><span class="p">(</span><span class="nf">str</span><span class="p">(</span><span class="n">payload</span><span class="p">).</span><span class="nf">encode</span><span class="p">())</span>
+<span class="n">r</span><span class="p">.</span><span class="nf">recvuntil</span><span class="p">(</span><span class="sa">b</span><span class="sh">'</span><span class="s">mod n): </span><span class="sh">'</span><span class="p">)</span>
+<span class="n">decr</span> <span class="o">=</span> <span class="n">r</span><span class="p">.</span><span class="nf">recvline</span><span class="p">().</span><span class="nf">decode</span><span class="p">()</span>
+
+<span class="n">password</span> <span class="o">=</span> <span class="nf">int</span><span class="p">(</span><span class="n">decr</span><span class="p">,</span><span class="mi">16</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span>
+
+<span class="n">password</span> <span class="o">=</span> <span class="n">password</span><span class="p">.</span><span class="nf">to_bytes</span><span class="p">(</span><span class="nf">len</span><span class="p">(</span><span class="nf">str</span><span class="p">(</span><span class="n">password</span><span class="p">)),</span> <span class="sh">"</span><span class="s">big</span><span class="sh">"</span><span class="p">).</span><span class="nf">decode</span><span class="p">(</span><span class="sh">"</span><span class="s">utf-8</span><span class="sh">"</span><span class="p">).</span><span class="nf">lstrip</span><span class="p">(</span><span class="sh">"</span><span class="se">\x00</span><span class="sh">"</span><span class="p">)</span>
+
+<span class="nf">print</span><span class="p">(</span><span class="n">password</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Once we have recovered the password, we can decrypt the secret.enc using the following terminal command</p>
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>openssl enc <span class="nt">-aes-256-cbc</span> <span class="nt">-d</span> <span class="nt">-in</span> secret.enc <span class="nt">-pass</span> pass:3319c
+</code></pre></div></div>
+
+  </main>
+
+</body>
+</html>

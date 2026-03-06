@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>miniRSA</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  </script>
+</head>
+<body>
+
+  <nav>
+  <div class="nav-left">
+    <ul>
+      <li><a href="/">Home</a></li>
+      <li><a href="/maths/">Maths</a></li>
+      <li><a href="/programming/">Programming</a></li>
+      <li><a href="/write-ups/">Write-ups</a></li>
+      <li><a href="/contact/">Contact</a></li>
+    </ul>
+  </div>
+
+  <div class="social-icons">
+    <a href="https://github.com/D1533" target="_blank" aria-label="GitHub">
+      <i class="fab fa-github"></i>
+    </a>
+    <a href="https://www.linkedin.com/in/david-manresa-526685294" target="_blank" aria-label="LinkedIn">
+      <i class="fab fa-linkedin"></i>
+    </a>
+  </div>
+</nav>
+
+
+  <main>
+    <hr />
+<h2 id="picoctf---minirsa">PicoCTF - miniRSA</h2>
+<hr />
+
+<h2 id="description">Description</h2>
+<p>Let’s decrypt this: ciphertext? Something seems a bit small.</p>
+
+<hr />
+<h2 id="solution">Solution</h2>
+<p>Since \(e=3\) and flags are usually short and might not be padded for this challenge, we expect that \(m^3\) does not exceed \(N\) by far.  That is, there exists some relatively small \(k \in \mathbb{N}\) such that</p>
+
+\[m^3 = Nk + c.\]
+
+<p>We can just try to solve this by brute force, iterating over \(k \in \mathbb{N}\) and check whether \(Nk + c\) is a perfect cube. Once the perfect cube is found, we can just recover the flag as</p>
+
+\[m = (Nk + c)^{1/3}.\]
+
+<p><em>Python Script</em></p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">gmpy2</span> <span class="kn">import</span> <span class="n">iroot</span>
+<span class="kn">from</span> <span class="n">Crypto.Util.number</span> <span class="kn">import</span> <span class="n">long_to_bytes</span>
+
+<span class="n">N</span> <span class="o">=</span> <span class="mi">29331922499794985782735976045591164936683059380558950386560160105740343201513369939006307531165922708949619162698623675349030430859547825708994708321803705309459438099340427770580064400911431856656901982789948285309956111848686906152664473350940486507451771223435835260168971210087470894448460745593956840586530527915802541450092946574694809584880896601317519794442862977471129319781313161842056501715040555964011899589002863730868679527184420789010551475067862907739054966183120621407246398518098981106431219207697870293412176440482900183550467375190239898455201170831410460483829448603477361305838743852756938687673</span>
+<span class="n">e</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">c</span> <span class="o">=</span> <span class="mi">2205316413931134031074603746928247799030155221252519872649649212867614751848436763801274360463406171277838056821437115883619169702963504606017565783537203207707757768473109845162808575425972525116337319108047893250549462147185741761825125</span> 
+
+
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="mi">1000</span><span class="p">):</span>
+    <span class="n">root</span> <span class="o">=</span> <span class="nf">iroot</span><span class="p">(</span><span class="n">N</span><span class="o">*</span><span class="n">k</span> <span class="o">+</span> <span class="n">c</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">root</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">True</span><span class="p">:</span>
+        <span class="n">flag</span> <span class="o">=</span> <span class="nf">long_to_bytes</span><span class="p">(</span><span class="n">root</span><span class="p">[</span><span class="mi">0</span><span class="p">]).</span><span class="nf">decode</span><span class="p">()</span>
+        <span class="nf">print</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+        <span class="k">break</span>
+</code></pre></div></div>
+
+  </main>
+
+</body>
+</html>

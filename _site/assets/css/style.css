@@ -1,0 +1,156 @@
+
+main {
+  padding-left: 20px;
+  padding-right: 20px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Dark background for whole page */
+body {
+  background-color: #1b1a24;  /* very dark grey/black */
+  color: #ddd;                /* light grey text */
+  font-family: Arial, sans-serif;
+  font-size: 18px; /* Try 18px or 1.1rem */
+  line-height: 1.6;
+  margin: 0;
+  padding: 0;
+}
+
+/* Links: lighter and with hover effect */
+a {
+  color: #9ecfff; /* light blue */
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+  color: #c0d6ff;
+}
+
+
+
+/* Headers */
+h1, h2, h3, h4, h5, h6 {
+  color: #eee;
+}
+
+/* Code blocks */
+pre code {
+  font-size: 14px; /* or try 13px or 0.9em */
+  line-height: 1.4;
+}
+
+
+code {
+  display: block; /* Makes padding apply properly inside <pre> */
+  padding: 0.2em 0.4em; /* Apply padding only here */
+}
+
+/* Footer (if any) */
+footer {
+  background-color: #1f1f1f;
+  color: #999;
+  text-align: center;
+  padding: 1em 0;
+  margin-top: 2em;
+}
+mjx-container[display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1em;
+}
+
+th, td {
+  padding-left: 1.5em;
+  padding-right: 1.5em;
+  text-align: left;
+  white-space: nowrap;
+}
+
+/* Smaller vertical padding inside data cells */
+td {
+  padding-top: 0.1em;
+  padding-bottom: 0.1em;
+}
+
+/* Larger vertical padding inside header cells */
+th {
+  padding-top: 0.5em;
+  padding-bottom: 0.5em;
+  border-bottom: 2px solid #444;
+}
+
+nav {
+   position: relative;
+  background-color: #1b1a24; /* match body background */
+  padding-top: 0.5em;
+  padding-bottom: 0.5em;
+  box-shadow: 0 2px 6px rgba(255, 255, 255, 0.20); /* soft light bottom shadow */
+  z-index: 10; /* ensures it stays above content if needed */
+}
+nav a {
+  color: #ccc;
+  font-weight: bold;
+}
+
+nav a:hover {
+  color: #fff;
+}
+.nav-left {
+  padding-left: 26.5%;
+}
+
+.nav-left ul {
+  display: flex;
+  gap: 2em;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-left ul li a {
+  color: white;
+  text-decoration: none;
+}
+.nav-left ul li a {
+  padding: 0.3em 0.6em;
+  border-radius: 4px;
+  transition: box-shadow 0.1s ease, background-color 0.1s ease;
+}
+
+.nav-left ul li a:hover {
+  box-shadow: 0 0 4px 1px rgba(29, 161, 242, 0.5);
+  background-color: rgba(29, 161, 242, 0.07);
+}
+
+.social-icons {
+  position: absolute;
+  top: 0.5em;
+  left: 70%;
+}
+
+.social-icons a {
+  color: white;
+  margin-left: 10px;
+  font-size: 1.2em;
+  text-decoration: none;
+}
+
+.social-icons a:hover {
+  color: #1da1f2;
+}
+h3 {
+  margin-top: 0.5em;
+  margin-bottom: 0.2em;
+}
+
+hr {
+  margin-top: 0.2em;
+  margin-bottom: 0.5em;
+}

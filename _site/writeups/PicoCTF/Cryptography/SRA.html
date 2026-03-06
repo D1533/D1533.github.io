@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>SRA</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  </script>
+</head>
+<body>
+
+  <nav>
+  <div class="nav-left">
+    <ul>
+      <li><a href="/">Home</a></li>
+      <li><a href="/maths/">Maths</a></li>
+      <li><a href="/programming/">Programming</a></li>
+      <li><a href="/write-ups/">Write-ups</a></li>
+      <li><a href="/contact/">Contact</a></li>
+    </ul>
+  </div>
+
+  <div class="social-icons">
+    <a href="https://github.com/D1533" target="_blank" aria-label="GitHub">
+      <i class="fab fa-github"></i>
+    </a>
+    <a href="https://www.linkedin.com/in/david-manresa-526685294" target="_blank" aria-label="LinkedIn">
+      <i class="fab fa-linkedin"></i>
+    </a>
+  </div>
+</nav>
+
+
+  <main>
+    <hr />
+<h2 id="picoctf---sra">PicoCTF - SRA</h2>
+<hr />
+
+<h2 id="description">Description</h2>
+<p>Description
+I just recently learnt about the SRA public key cryptosystem… or wait, was it supposed to be RSA? Hmmm, I should probably check… Connect to the program on our server: nc saturn.picoctf.net 50736 Download the program: chal.py</p>
+
+<hr />
+<h2 id="solution">Solution</h2>
+<p>After deobfuscating the source code, we see that the challenge provides us the ciphertext \(c\) (anger), the private key \(d\) (envy), and the public exponent \(e\). However, \(n\) is not given.</p>
+
+<p>Notice that since \(ed \equiv 1 \ mod \ \varphi(n)\), then</p>
+
+\[ed -1 = k(p-1)(q-1)\]
+
+<p>for some \(k \in \mathbb{Z}\). <br />
+From this we can infer that \(p-1\) and \(q-1\) are both divisors of \(ed -1\), so our strategy is to find all divisors \(t\) of \(ed - 1\) such that \(t+1\) is a prime of at least 128 bits. <br />
+Once we have all such primes, we can check for each pair \(p,q\) the condition \(d \equiv e^{-1} \ mod \ n\), with \(n=pq\). If this condition is satisfied, we have correctly recovered \(p\) and \(q\), and thus \(n\). Therefore we can recover the <em>pride</em> variable by computing \(c^d \ mod \ n\) and send it to the server in order to recieve the flag.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">sympy</span> <span class="k">as</span> <span class="n">sp</span>
+<span class="kn">from</span> <span class="n">Crypto.Util.number</span> <span class="kn">import</span> <span class="n">isPrime</span><span class="p">,</span> <span class="n">long_to_bytes</span>
+<span class="kn">from</span> <span class="n">pwn</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="n">e</span> <span class="o">=</span> <span class="mi">65537</span>
+
+
+<span class="n">r</span> <span class="o">=</span> <span class="nf">remote</span><span class="p">(</span><span class="sh">"</span><span class="s">saturn.picoctf.net</span><span class="sh">"</span><span class="p">,</span> <span class="mi">62609</span><span class="p">)</span>
+<span class="n">r</span><span class="p">.</span><span class="nf">recvuntil</span><span class="p">(</span><span class="sa">b</span><span class="sh">'</span><span class="s">anger = </span><span class="sh">'</span><span class="p">)</span>
+<span class="n">c</span> <span class="o">=</span> <span class="nf">int</span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="nf">recvline</span><span class="p">())</span>
+<span class="n">r</span><span class="p">.</span><span class="nf">recvuntil</span><span class="p">(</span><span class="sa">b</span><span class="sh">'</span><span class="s">envy = </span><span class="sh">'</span><span class="p">)</span>
+<span class="n">d</span> <span class="o">=</span> <span class="nf">int</span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="nf">recvline</span><span class="p">())</span>
+
+<span class="n">divisors</span> <span class="o">=</span> <span class="n">sp</span><span class="p">.</span><span class="nf">divisors</span><span class="p">(</span><span class="n">e</span><span class="o">*</span><span class="n">d</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">primes</span> <span class="o">=</span> <span class="p">[</span><span class="n">d</span><span class="o">+</span><span class="mi">1</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">divisors</span> <span class="k">if</span> <span class="nf">isPrime</span><span class="p">(</span><span class="n">d</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>
+<span class="n">primes</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">primes</span> <span class="k">if</span> <span class="n">p</span> <span class="o">&lt;=</span> <span class="mi">2</span><span class="o">**</span><span class="mi">128</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="nf">len</span><span class="p">(</span><span class="n">primes</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="nf">len</span><span class="p">(</span><span class="n">primes</span><span class="p">)):</span>
+        <span class="n">phi</span> <span class="o">=</span> <span class="p">(</span><span class="n">primes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">primes</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="n">primes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">primes</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nf">pow</span><span class="p">(</span><span class="n">e</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">phi</span><span class="p">)</span> <span class="o">==</span> <span class="n">d</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">pride</span> <span class="o">=</span> <span class="nf">long_to_bytes</span><span class="p">(</span><span class="nf">pow</span><span class="p">(</span><span class="n">c</span><span class="p">,</span><span class="n">d</span><span class="p">,</span><span class="n">n</span><span class="p">)).</span><span class="nf">decode</span><span class="p">()</span>
+                <span class="k">break</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+
+<span class="n">r</span><span class="p">.</span><span class="nf">recv</span><span class="p">()</span>
+<span class="n">r</span><span class="p">.</span><span class="nf">sendline</span><span class="p">(</span><span class="n">pride</span><span class="p">.</span><span class="nf">encode</span><span class="p">())</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="nf">recv</span><span class="p">().</span><span class="nf">decode</span><span class="p">())</span>
+
+</code></pre></div></div>
+
+  </main>
+
+</body>
+</html>

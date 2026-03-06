@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>triple-secure</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  </script>
+</head>
+<body>
+
+  <nav>
+  <div class="nav-left">
+    <ul>
+      <li><a href="/">Home</a></li>
+      <li><a href="/maths/">Maths</a></li>
+      <li><a href="/programming/">Programming</a></li>
+      <li><a href="/write-ups/">Write-ups</a></li>
+      <li><a href="/contact/">Contact</a></li>
+    </ul>
+  </div>
+
+  <div class="social-icons">
+    <a href="https://github.com/D1533" target="_blank" aria-label="GitHub">
+      <i class="fab fa-github"></i>
+    </a>
+    <a href="https://www.linkedin.com/in/david-manresa-526685294" target="_blank" aria-label="LinkedIn">
+      <i class="fab fa-linkedin"></i>
+    </a>
+  </div>
+</nav>
+
+
+  <main>
+    <hr />
+<h2 id="picoctf---triple-secure">PicoCTF - triple-secure</h2>
+<hr />
+
+<h2 id="description">Description</h2>
+<p>To get the flag, you must break RSA not once, but three times!</p>
+
+<hr />
+<h2 id="solution">Solution</h2>
+
+<p>The challenge provides us with the following python script of the encryption process.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#!/usr/bin/env python3
+</span>
+<span class="kn">from</span> <span class="n">Crypto.Util.number</span> <span class="kn">import</span> <span class="n">getPrime</span><span class="p">,</span> <span class="n">bytes_to_long</span>
+
+<span class="k">with</span> <span class="nf">open</span><span class="p">(</span><span class="sh">'</span><span class="s">flag.txt</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">rb</span><span class="sh">'</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">flag</span> <span class="o">=</span> <span class="n">f</span><span class="p">.</span><span class="nf">read</span><span class="p">()</span>
+
+<span class="n">p</span> <span class="o">=</span> <span class="nf">getPrime</span><span class="p">(</span><span class="mi">1024</span><span class="p">)</span>
+<span class="n">q</span> <span class="o">=</span> <span class="nf">getPrime</span><span class="p">(</span><span class="mi">1024</span><span class="p">)</span>
+<span class="n">r</span> <span class="o">=</span> <span class="nf">getPrime</span><span class="p">(</span><span class="mi">1024</span><span class="p">)</span>
+
+<span class="n">n1</span> <span class="o">=</span> <span class="n">p</span> <span class="o">*</span> <span class="n">q</span>
+<span class="n">n2</span> <span class="o">=</span> <span class="n">p</span> <span class="o">*</span> <span class="n">r</span>
+<span class="n">n3</span> <span class="o">=</span> <span class="n">q</span> <span class="o">*</span> <span class="n">r</span>
+
+<span class="n">moduli</span> <span class="o">=</span> <span class="p">[</span><span class="n">n1</span><span class="p">,</span> <span class="n">n2</span><span class="p">,</span> <span class="n">n3</span><span class="p">]</span>
+
+<span class="n">e</span> <span class="o">=</span> <span class="mi">65537</span>
+<span class="n">c</span> <span class="o">=</span> <span class="nf">bytes_to_long</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">moduli</span><span class="p">:</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="nf">pow</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="nf">open</span><span class="p">(</span><span class="sh">'</span><span class="s">public-key.txt</span><span class="sh">'</span><span class="p">,</span> <span class="sh">'</span><span class="s">w</span><span class="sh">'</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">f</span><span class="p">.</span><span class="nf">write</span><span class="p">(</span><span class="sa">f</span><span class="sh">'</span><span class="s">n1: </span><span class="si">{</span><span class="n">n1</span><span class="si">}</span><span class="se">\n</span><span class="sh">'</span><span class="p">)</span>
+    <span class="n">f</span><span class="p">.</span><span class="nf">write</span><span class="p">(</span><span class="sa">f</span><span class="sh">'</span><span class="s">n2: </span><span class="si">{</span><span class="n">n2</span><span class="si">}</span><span class="se">\n</span><span class="sh">'</span><span class="p">)</span>
+    <span class="n">f</span><span class="p">.</span><span class="nf">write</span><span class="p">(</span><span class="sa">f</span><span class="sh">'</span><span class="s">n3: </span><span class="si">{</span><span class="n">n3</span><span class="si">}</span><span class="se">\n</span><span class="sh">'</span><span class="p">)</span>
+    <span class="n">f</span><span class="p">.</span><span class="nf">write</span><span class="p">(</span><span class="sa">f</span><span class="sh">'</span><span class="s">e: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="se">\n</span><span class="sh">'</span><span class="p">)</span>
+    <span class="n">f</span><span class="p">.</span><span class="nf">write</span><span class="p">(</span><span class="sa">f</span><span class="sh">'</span><span class="s">c: </span><span class="si">{</span><span class="n">c</span><span class="si">}</span><span class="se">\n</span><span class="sh">'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Notice that since \(n_1\) and \(n_2\) share the prime \(p\) and \(n_2\) and \(n_3\) share the prime \(r\) we have that \(p = gcd(n_1,n_2)\) and \(r = gcd(n_2,n_3)\). Therefore, the factor \(q\) can simply be recovered after this as \(q = n_1 / p\).</p>
+
+<p>Once we have the factorizations of the moduli, we compute Euler’s totient functions</p>
+
+\[\begin{align*}
+    \varphi(n_1) &amp;= (p-1)(q-1) \\
+    \varphi(n_2) &amp;= (p-1)(r-1) \\
+    \varphi(n_3) &amp;= (q-1)(r-1)
+\end{align*}\]
+
+<p>and recover the private keys 
+\(d_i = e^{-1} \ mod \ \varphi(n_i), \ i=1,2,3.\)</p>
+
+<p>Finally, since the encryption was performed as</p>
+
+\[c = ((m^e \ mod \ n_1 )^e \ mod \ n_2)^e \ mod \ n_3,\]
+
+<p>we can recover the flag with</p>
+
+\[m = ((c^{d_3} \ mod \ n_3) ^{d_2} \ mod \ n_2)^{d_1} \ mod \ n_1.\]
+
+<p><em>Python script</em></p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">math</span> <span class="kn">import</span> <span class="n">gcd</span>
+<span class="kn">from</span> <span class="n">Crypto.Util.number</span> <span class="kn">import</span> <span class="n">long_to_bytes</span>
+
+<span class="n">n1</span> <span class="o">=</span> <span class="mi">15192492059814175574941055248891268822162533520576381643453916855435310880285336743521199057138647926712835561752909538944229702432795423884081992987060760867003375755338557996965825324749221386675061886921763747311599846248565297387814717840084998677273427776535730840343260681623323972936404815862969684384733188827100528542007213405382537935243645704237369770300643318878176739181891072725262069278646319502747718264711249767568106460533935904219027313131270918072460753061248221785076571054217566164086518459844527639082962818865640864990672033657423448004651989761933295878220596871163544315057550871764431562609</span>
+<span class="n">n2</span> <span class="o">=</span> <span class="mi">15896482259608901559307142941940447232781986632502572991096358742354276347180855512281737388865155342941898447990281534875563129451327818848218781669275420292448483501384399236235069545630630803245125324540747189305877026874280373084005881976783826855683894679886076284892158862128016644725623200756074647449586448311069649515124968073653962156220351541159266665209363921681260367806445996085898841723209546021525012849575330252109081102034217511126192041193752164593519033112893785698509908066978411804133407757110693612926897693360335062446358344787945536573595254027237186626524339635916646549827668224103778645691</span>
+<span class="n">n3</span> <span class="o">=</span> <span class="mi">16866741024290909515057727275216398505732182398866918550484373905882517578053919415558082579015872872951000794941027637288054371559194213756955947899010737036612882434425333227722062177363502202508368233645194979635011153509966453453939567651558628538264913958577698775210185802686516291658717434986786180150155217870273053289491069438118831268852205061142773994943387097417127660301519478434586738321776681183207796708047183864564628638795241493797850819727510884955449295504241048877759144706319821139891894102191791380663609673212846473456961724455481378829090944739778647230176360232323776623751623188480059886131</span>
+<span class="n">e</span> <span class="o">=</span> <span class="mi">65537</span>
+<span class="n">c</span> <span class="o">=</span> <span class="mi">5527557130549486626868355638343164556636640645975070563878791684872084568660950949839392805902757480207470630636669246237037694811318758082850684387745430679902248681495009593699928689084754915870981630249821819243308794164014262751330197659053593094226287631278905866187610594268602850237495796773397013150811502709453828013939726304717253858072813654392558403246468440154864433527550991691477685788311857169847773031859714215539719699781912119479668386111728900692806809163838659848295346731226661208367992168348253106720454566346143578242135426677554444162371330348888185625323879290902076363791018691228620744490</span>
+
+<span class="n">p</span> <span class="o">=</span> <span class="nf">gcd</span><span class="p">(</span><span class="n">n1</span><span class="p">,</span><span class="n">n2</span><span class="p">)</span>
+<span class="n">r</span> <span class="o">=</span> <span class="nf">gcd</span><span class="p">(</span><span class="n">n2</span><span class="p">,</span><span class="n">n3</span><span class="p">)</span>
+<span class="n">q</span> <span class="o">=</span> <span class="n">n1</span> <span class="o">//</span> <span class="n">p</span>
+
+<span class="n">d1</span> <span class="o">=</span> <span class="nf">pow</span><span class="p">(</span><span class="n">e</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="n">p</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">q</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">d2</span> <span class="o">=</span> <span class="nf">pow</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="n">p</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">r</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">d3</span> <span class="o">=</span> <span class="nf">pow</span><span class="p">(</span><span class="n">e</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="n">q</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">r</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+
+<span class="n">flag</span> <span class="o">=</span> <span class="nf">long_to_bytes</span><span class="p">(</span><span class="nf">pow</span><span class="p">(</span><span class="nf">pow</span><span class="p">(</span><span class="nf">pow</span><span class="p">(</span><span class="n">c</span><span class="p">,</span><span class="n">d3</span><span class="p">,</span><span class="n">n3</span><span class="p">),</span><span class="n">d2</span><span class="p">,</span><span class="n">n2</span><span class="p">),</span><span class="n">d1</span><span class="p">,</span><span class="n">n1</span><span class="p">)).</span><span class="nf">decode</span><span class="p">()</span>
+<span class="nf">print</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+</code></pre></div></div>
+
+  </main>
+
+</body>
+</html>

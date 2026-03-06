@@ -1,0 +1,20 @@
+current directory: /home/d1533/Code/GithubD1533/jekylltest/myblog/vendor/bundle/ruby/3.1.0/gems/json-2.12.2/ext/json/ext/parser
+/usr/bin/ruby3.1 -I /usr/lib/ruby/vendor_ruby -r ./siteconf20250616-14597-kbtdo8.rb extconf.rb
+checking for rb_enc_interned_str() in ruby.h... yes
+checking for rb_hash_new_capa() in ruby.h... no
+checking for rb_hash_bulk_insert() in ruby.h... yes
+checking for strnlen() in string.h... yes
+checking for whether -std=c99 is accepted as CFLAGS... yes
+creating Makefile
+
+current directory: /home/d1533/Code/GithubD1533/jekylltest/myblog/vendor/bundle/ruby/3.1.0/gems/json-2.12.2/ext/json/ext/parser
+make DESTDIR\= clean
+
+current directory: /home/d1533/Code/GithubD1533/jekylltest/myblog/vendor/bundle/ruby/3.1.0/gems/json-2.12.2/ext/json/ext/parser
+make DESTDIR\=
+compiling parser.c
+linking shared-object json/ext/parser.so
+
+current directory: /home/d1533/Code/GithubD1533/jekylltest/myblog/vendor/bundle/ruby/3.1.0/gems/json-2.12.2/ext/json/ext/parser
+make DESTDIR\= install
+/usr/bin/install -c -m 0755 parser.so ./.gem.20250616-14597-bu52zg/json/ext
