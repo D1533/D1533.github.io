@@ -4,32 +4,23 @@ layout: home
 
 ## Home
 
-<img src="/assets/images/profile_picture.jpeg" alt="David Manresa" style="
-  width: 200px;
-  float: right;
-  margin-left: 20px;
-  border: 2px solid #ccc;       
-  border-radius: 3px;           
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  filter: brightness(95%); 
-">
-Hi, my name is David Manresa and I am a mathematician from Barcelona (Spain).
+### Whoami
 
-The purpose of this website is to share solutions from interesting math problems,  programming projects I have been working on, and write-ups from various Capture The Flag (CTF) challenges/competitions, with a particular focus on cryptography.
+I am a mathematician from Barcelona, Spain.
+
+The goal of this blog is to consolidate the knowledge I acquire while learning.
+I am currently looking for a CTF team. I am focused on cryptography and binary exploitation. Leave me a message if you are recuiting for your CTF team.
 
 <br>
 
-### Education
----
+### CTF Websites Stats
 
-| - Master Degree in Advanced Mathematics          | UNED                              | Oct. 2024 – Jun.2025   |
-| - Bachelor Degree in Mathematics                 | UNED                              | Oct. 2020 – Jun. 2024   |
-| - Bachelor Degree in Violin Interpretation       | Liceu Conservatory of Music       | Sept. 2015 – Jun. 2019   |
+CryptoHack   TOP 408
+pwn.college  Blue Belt
+pwnable.kr   TOP 373
+Root Me      TOP 32514
 
-<br>
 
-### Work Experience
----
 
-| - Data Scientist              |  Worldpanel by Numerator | Oct. 2024 - Present    |
-| - Violin and Piano Professor  |  Tremolo School of Music | Oct. 2019 - Sept. 2023 |
+
+
